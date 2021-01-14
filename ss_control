@@ -1,0 +1,45 @@
+% Define open-loop system transfer funtion
+num = [0.5];
+den = [1 6 15];
+G = tf(num, den);
+rg = order(G);
+
+% Find phase variable state-space representation
+[Ac, Bc, Cc, Dc] = tf2ss(num, den);
+V = fliplr(eye(rg));
+Ap = inv(V)*Ac*V;
+Bp = inv(V)*Bc;
+Cp = Cc*V;
+Dp = Dc;
+
+% Determine controllability
+Cm = ctrb(Ap, Bp);
+rc = rank(Cm);
+if rc == rg
+    disp('System is controllable')
+else 
+    disp('System NOT controllable')
+end
+
+% Desired performance parameters
+OS = 5;
+Ts = 0.2;
+%Tp = 0.25;
+
+% Determine desired pole locations
+z = -log(OS/100)/sqrt(pi*pi + log(OS/100)^2);
+wn = 4/(z*Ts);
+%wn = pi/(Tp*sqrt(1 - z^2));
+a = -z*wn;
+b = wn*sqrt(1 - z^2);
+
+% Pole matrix for second order system
+Pc = [(a + b*j), (a - b*j)]
+
+% Pole matrix for third order system
+%Pc = [(a + b*j), (a - b*j), 10*a] % 10 times further away than dominant pole
+%Z = zero(G)
+%Pc = [(a + b*j), (a - b*j), Z] % Cancel effects of the zero
+
+% Design controller via pole placement
+K = place(Ap, Bp, Pc)
